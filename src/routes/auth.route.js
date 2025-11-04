@@ -1,4 +1,5 @@
 const express =require('express');
+const {registerController,loginController}=require("../controllers/auth.controller")
 
 const router = express.Router()
 

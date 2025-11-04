@@ -1,9 +1,10 @@
 const userModel=require("../models/user.model")
 const jwt=require('jsonwebtoken')
+const bcrypt=require("bcryptjs");
 
 async function registerController (req,res){
     const {username,password}=req.body;
-    const isUserExists= await userModel.findOne(username)
+    const isUserExists= await userModel.findOne({username})
 
     if(isUserExists){
         return res.json({
@@ -13,7 +14,7 @@ async function registerController (req,res){
 
     const user=await userModel.create({
         username,
-        password
+        password:await bcrypt.hash(password,10)
     })
     const token=jwt.sign({id:user._id},process.env.JWT_SECRET)
     res.cookie("token",token)
@@ -31,9 +32,30 @@ async function registerController (req,res){
 
 async function loginController (req,res){
     const {username,password}=req.body;
-    const user= await userModel.findOne(username)
+    const user= await userModel.findOne({username})
 
     if(!user){
-       
+      return res.json({
+        message:"user not found"
+       })
     }
+    const isPasswordValid=await bcrypt.compare(password,user.password);
+    if(!isPasswordValid){
+        return res.json({
+            message:"password is invalid"
+        })
+    }
+    const token =jwt.sign({id:user._id},process.env.JWT_SECRET);
+    res.cookie("token",token);
+
+     res.json({
+        message:"user logged in successfully",
+        username:user.username,
+        password:user.password,
+        id:user._id
+    })
+}
+module.exports={
+    registerController,
+    loginController
 }
